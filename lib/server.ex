@@ -13,26 +13,34 @@ defmodule Server do
   Listen for incoming connections
   """
   def listen() do
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
     IO.puts("Logs from your program will appear here!")
 
-    # Uncomment this block to pass the first stage
-    #
-    # Since the tester restarts your program quite often, setting SO_REUSEADDR
-    # ensures that we don't run into 'Address already in use' errors
     {:ok, socket} = :gen_tcp.listen(6379, [:binary, active: false, reuseaddr: true])
-    {:ok, client} = :gen_tcp.accept(socket)
-    response(client, "")
+    accept(socket)
   end
 
-  def response(client, _msg) do
-    case :gen_tcp.recv(client, 0) do
-      {:ok, _} ->
-        :gen_tcp.send(client, "+PONG\r\n")
-        response(client, "")
+  def accept(socket) do
+    {:ok, client} = :gen_tcp.accept(socket)
+    # Task.start_link(fn -> serve(client) end)
+    Task.start_link(Server, :serve, [client])
+    accept(socket)
+  end
 
-      _ ->
-        IO.puts("response closed")
-    end
+  def serve(client) do
+    client
+    |> recv()
+    |> send_response(client)
+
+    serve(client)
+  end
+
+  defp recv(client) do
+    {:ok, data} = :gen_tcp.recv(client, 0)
+    data
+  end
+
+  defp send_response(data, client) do
+    IO.inspect(data)
+    :gen_tcp.send(client, "+PONG\r\n")
   end
 end
