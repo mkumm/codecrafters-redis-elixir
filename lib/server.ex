@@ -19,9 +19,13 @@ defmodule Server do
     accept(socket)
   end
 
+  @doc """
+  Application pauses here waiting to accept a connection. 
+  A new task/process will be created with each client 
+  connection.
+  """
   def accept(socket) do
     {:ok, client} = :gen_tcp.accept(socket)
-    # Task.start_link(fn -> serve(client) end)
     Task.start_link(Server, :serve, [client])
     accept(socket)
   end
