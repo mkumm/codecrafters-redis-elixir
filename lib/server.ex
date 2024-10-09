@@ -40,6 +40,7 @@ defmodule Server do
 
   defp recv(client) do
     {:ok, data} = :gen_tcp.recv(client, 0)
+    dbg(Parser.nparser(data))
     data
   end
 
