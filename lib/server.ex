@@ -40,12 +40,15 @@ defmodule Server do
 
   defp recv(client) do
     {:ok, data} = :gen_tcp.recv(client, 0)
-    dbg(Parser.nparser(data))
-    data
+    Parser.nparser(data)
+    # data
   end
 
-  defp send_response(data, client) do
-    IO.inspect(data)
+  defp send_response(%{arguments: [{_, "PING"}]}, client) do
     :gen_tcp.send(client, "+PONG\r\n")
+  end
+
+  defp send_response(%{arguments: [{_, "ECHO"}, {_, echo}]}, client) do
+    :gen_tcp.send(client, "+#{echo}\r\n")
   end
 end
