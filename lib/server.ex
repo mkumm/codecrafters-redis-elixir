@@ -33,18 +33,19 @@ defmodule Server do
   def serve(client) do
     client
     |> recv()
-    |> send_response(client)
 
     serve(client)
   end
 
   defp recv(client) do
-    {:ok, data} = :gen_tcp.recv(client, 0)
-    data
-  end
+    case :gen_tcp.recv(client, 0) do
+      {:ok, data} ->
+        IO.inspect(data)
+        :gen_tcp.send(client, "+PONG\r\n")
 
-  defp send_response(data, client) do
-    IO.inspect(data)
-    :gen_tcp.send(client, "+PONG\r\n")
+      {:error, reason} ->
+        :gen_tcp.close(client)
+        {:error, reason}
+    end
   end
 end
