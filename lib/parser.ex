@@ -14,8 +14,6 @@ defmodule Parser do
       |> String.trim()
       |> String.split("\r\n")
 
-    dbg(msg)
-
     %__MODULE__{}
     |> Map.put(:request, str)
     |> Map.put(:header, parse_header(header))

@@ -20,8 +20,8 @@ defmodule Server do
   end
 
   @doc """
-  Application pauses here waiting to accept a connection. 
-  A new task/process will be created with each client 
+  Application pauses here waiting to accept a connection.
+  A new task/process will be created with each client
   connection.
   """
   def accept(socket) do
@@ -41,7 +41,6 @@ defmodule Server do
   defp recv(client) do
     {:ok, data} = :gen_tcp.recv(client, 0)
     Parser.nparser(data)
-    # data
   end
 
   defp send_response(%{arguments: [{_, "PING"}]}, client) do
