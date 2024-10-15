@@ -1,6 +1,7 @@
 defmodule Parser do
   defstruct request: "",
             header: {},
+            command: "",
             arguments: []
 
   def nparser(str) do
@@ -17,16 +18,23 @@ defmodule Parser do
     %__MODULE__{}
     |> Map.put(:request, str)
     |> Map.put(:header, parse_header(header))
-    |> Map.put(:arguments, parse_data(msg))
+    |> Map.put(:command, set_command(msg))
+    |> Map.put(:arguments, parse_arguments(msg))
+  end
+
+  def set_command([_, command | _]) do
+    String.upcase(command)
   end
 
   def parse_header(<<char, number>>) do
     {<<char>>, String.to_integer(<<number>>)}
   end
 
-  def parse_data(data) do
+  def parse_arguments([_, _ | data]) do
     data
     |> Enum.chunk_every(2)
     |> Enum.map(fn [a, b] -> {a, b} end)
   end
+
+  def parse_data(_), do: []
 end

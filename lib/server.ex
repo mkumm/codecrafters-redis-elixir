@@ -30,6 +30,7 @@ defmodule Server do
     accept(socket)
   end
 
+  def server(:no_client), do: nil
   def serve(client) do
     client
     |> recv()
@@ -39,15 +40,22 @@ defmodule Server do
   end
 
   defp recv(client) do
-    {:ok, data} = :gen_tcp.recv(client, 0)
-    Parser.nparser(data)
+    case :gen_tcp.recv(client, 0) do
+      {:ok, data} ->
+        Parser.nparser(data)
+      {:error, :closed} ->
+        :gen_tcp.close(client)
+        :no_client
+    end
   end
 
-  defp send_response(%{arguments: [{_, "PING"}]}, client) do
+  defp send_response(:no_client, _client), do: :no_client
+  defp send_response(%Parser{command: "PING"} = _parser, client) do
     :gen_tcp.send(client, "+PONG\r\n")
   end
 
-  defp send_response(%{arguments: [{_, "ECHO"}, {_, echo}]}, client) do
-    :gen_tcp.send(client, "+#{echo}\r\n")
+  defp send_response(%Parser{command: "ECHO"} = parser, client) do
+    [{_, msg}] = parser.arguments
+    :gen_tcp.send(client, "+#{msg}\r\n")
   end
 end
