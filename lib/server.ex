@@ -4,8 +4,10 @@ defmodule Server do
   """
 
   use Application
+  alias Storage
 
   def start(_type, _args) do
+    Storage.start_link(%{})
     Supervisor.start_link([{Task, fn -> Server.listen() end}], strategy: :one_for_one)
   end
 
@@ -31,6 +33,7 @@ defmodule Server do
   end
 
   def server(:no_client), do: nil
+
   def serve(client) do
     client
     |> recv()
@@ -43,6 +46,7 @@ defmodule Server do
     case :gen_tcp.recv(client, 0) do
       {:ok, data} ->
         Parser.nparser(data)
+
       {:error, :closed} ->
         :gen_tcp.close(client)
         :no_client
@@ -50,6 +54,7 @@ defmodule Server do
   end
 
   defp send_response(:no_client, _client), do: :no_client
+
   defp send_response(%Parser{command: "PING"} = _parser, client) do
     :gen_tcp.send(client, "+PONG\r\n")
   end
@@ -57,5 +62,22 @@ defmodule Server do
   defp send_response(%Parser{command: "ECHO"} = parser, client) do
     [{_, msg}] = parser.arguments
     :gen_tcp.send(client, "+#{msg}\r\n")
+  end
+
+  defp send_response(%Parser{command: "SET"} = parser, client) do
+    [{_, key}, {_, value}] = parser.arguments
+    Storage.add_data(%{key => value})
+    :gen_tcp.send(client, "+OK\r\n")
+  end
+
+  defp send_response(%Parser{command: "GET"} = parser, client) do
+    [{_, msg}] = parser.arguments
+    value = Storage.get_key(msg)
+
+    if value do
+      :gen_tcp.send(client, "+#{value}\r\n")
+    else
+      :gen_tcp.send(client, "$-1\r\n")
+    end
   end
 end
