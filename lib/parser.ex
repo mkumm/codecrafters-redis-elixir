@@ -33,7 +33,11 @@ defmodule Parser do
   def parse_arguments([_, _ | data]) do
     data
     |> Enum.chunk_every(2)
-    |> Enum.map(fn [a, b] -> {a, b} end)
+    |> Enum.map(fn [_a, b] -> b end)
+    |> Enum.chunk_every(2)
+    |> Enum.map(fn [a, b] -> {String.to_atom(a), b} end)
+    |> Keyword.new()
+    |> dbg()
   end
 
   def parse_data(_), do: []

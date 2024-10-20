@@ -65,19 +65,35 @@ defmodule Server do
   end
 
   defp send_response(%Parser{command: "SET"} = parser, client) do
-    [{_, key}, {_, value}] = parser.arguments
-    Storage.add_data(%{key => value})
+    dbg(parser)
+    expirey = Keyword.get(parser.arguments, :px)
+    # Storage.add_data(%{key => {value, set_expiration(expirey)}})
     :gen_tcp.send(client, "+OK\r\n")
   end
 
   defp send_response(%Parser{command: "GET"} = parser, client) do
     [{_, msg}] = parser.arguments
-    value = Storage.get_key(msg)
+    {value, expires} = Storage.get_key(msg)
 
-    if value do
+    if value and !expired?(expires) do
       :gen_tcp.send(client, "+#{value}\r\n")
     else
       :gen_tcp.send(client, "$-1\r\n")
+    end
+  end
+
+  defp set_expiration(nil), do: nil
+
+  defp set_expiration(ms) do
+    DateTime.utc_now()
+    |> DateTime.add(String.to_integer(ms), :millisecond)
+    |> dbg()
+  end
+
+  defp expired?(time) do
+    case DateTime.compare(time, DateTime.utc_now()) do
+      :lt -> true
+      _ -> false
     end
   end
 end
